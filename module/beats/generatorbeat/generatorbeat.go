@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/elastic/beats/libbeat/common"
 	"github.com/elastic/beats/metricbeat/mb"
@@ -14,7 +15,17 @@ type metricSet struct {
 	url    string
 	client *http.Client // HTTP client that is reused across requests.
 
-	stats map[string]float64
+	statsLast time.Time
+	stats     beatStats
+}
+
+type beatStats struct {
+	LogstashSuccess int64 `json:"libbeatLogstashPublishedAndAckedEvents"`
+	LogstashFail    int64 `json:"libbeatLogstashPublishedButNotAckedEvents"`
+	KafkaSuccess    int64 `json:"libbeatKafkaPublishedAndAckedEvents"`
+	KafkaFail       int64 `json:"libbeatKafkaPublishedButNotAckedEvents"`
+	ESSuccess       int64 `json:"libbeatEsPublishedAndAckedEvents"`
+	ESFail          int64 `json:"libbeatEsPublishedButNotAckedEvents"`
 }
 
 func init() {
@@ -39,7 +50,6 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 		BaseMetricSet: base,
 		url:           url,
 		client:        &http.Client{Timeout: base.Module().Config().Timeout},
-		stats:         map[string]float64{},
 	}, nil
 }
 
@@ -48,35 +58,60 @@ func (m *metricSet) Fetch() (common.MapStr, error) {
 	if err != nil {
 		return nil, err
 	}
+	now := time.Now()
 	defer resp.Body.Close()
 
-	stats := struct {
-		LogstashSuccess int64 `json:"libbeatLogstashPublishedAndAckedEvents"`
-		LogstashFail    int64 `json:"libbeatLogstashPublishedButNotAckedEvents"`
-		KafkaSuccess    int64 `json:"libbeatKafkaPublishedAndAckedEvents"`
-		KafkaFail       int64 `json:"libbeatKafkaPublishedButNotAckedEvents"`
-		ESSuccess       int64 `json:"libbeatEsPublishedAndAckedEvents"`
-		ESFail          int64 `json:"libbeatEsPublishedButNotAckedEvents"`
-	}{}
+	stats := beatStats{}
 	err = json.NewDecoder(resp.Body).Decode(&stats)
 	if err != nil {
 		return nil, err
 	}
 
-	event := common.MapStr{
-		"hostname": m.Host(),
-		"logstash": common.MapStr{
-			"success": stats.LogstashSuccess,
-			"fail":    stats.LogstashFail,
-		},
-		"kafka": common.MapStr{
-			"success": stats.KafkaSuccess,
-			"fail":    stats.KafkaFail,
-		},
-		"es": common.MapStr{
-			"success": stats.ESSuccess,
-			"fail":    stats.ESFail,
-		},
+	var event common.MapStr
+	if !m.statsLast.IsZero() {
+		dt := now.Sub(m.statsLast).Seconds()
+		old := &m.stats
+		delta := func(v, old int64) float64 {
+			return float64(v-old) / dt
+		}
+
+		event = common.MapStr{
+			"hostname":   m.Host(),
+			"@timestamp": common.Time(now),
+			"logstash": common.MapStr{
+				"success": delta(stats.LogstashSuccess, old.LogstashSuccess),
+				"fail":    delta(stats.LogstashFail, old.LogstashFail),
+			},
+			"kafka": common.MapStr{
+				"success": delta(stats.KafkaSuccess, old.KafkaSuccess),
+				"fail":    delta(stats.KafkaFail, old.KafkaFail),
+			},
+			"es": common.MapStr{
+				"success": delta(stats.ESSuccess, stats.ESSuccess),
+				"fail":    delta(stats.ESFail, stats.ESFail),
+			},
+		}
+	} else {
+		event = common.MapStr{
+			"hostname":   m.Host(),
+			"@timestamp": common.Time(now),
+			"logstash": common.MapStr{
+				"success": 0.0,
+				"fail":    0.0,
+			},
+			"kafka": common.MapStr{
+				"success": 0.0,
+				"fail":    0.0,
+			},
+			"es": common.MapStr{
+				"success": 0.0,
+				"fail":    0.0,
+			},
+		}
 	}
+
+	m.statsLast = now
+	m.stats = stats
+
 	return event, nil
 }
