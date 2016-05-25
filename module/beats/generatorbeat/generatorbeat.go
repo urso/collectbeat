@@ -26,6 +26,8 @@ type beatStats struct {
 	KafkaFail       int64 `json:"libbeatKafkaPublishedButNotAckedEvents"`
 	ESSuccess       int64 `json:"libbeatEsPublishedAndAckedEvents"`
 	ESFail          int64 `json:"libbeatEsPublishedButNotAckedEvents"`
+	TotalSuccess    int64
+	TotalFail       int64
 }
 
 func init() {
@@ -72,6 +74,8 @@ func (m *metricSet) Fetch() (common.MapStr, error) {
 		m.reset()
 		return nil, err
 	}
+	stats.TotalSuccess = stats.LogstashSuccess + stats.KafkaSuccess + stats.ESSuccess
+	stats.TotalFail = stats.LogstashFail + stats.KafkaFail + stats.ESFail
 
 	var event common.MapStr
 	if !m.statsLast.IsZero() {
@@ -93,8 +97,12 @@ func (m *metricSet) Fetch() (common.MapStr, error) {
 				"fail":    delta(stats.KafkaFail, old.KafkaFail),
 			},
 			"es": common.MapStr{
-				"success": delta(stats.ESSuccess, stats.ESSuccess),
-				"fail":    delta(stats.ESFail, stats.ESFail),
+				"success": delta(stats.ESSuccess, old.ESSuccess),
+				"fail":    delta(stats.ESFail, old.ESFail),
+			},
+			"total": common.MapStr{
+				"success": delta(stats.TotalSuccess, old.TotalSuccess),
+				"fail": delta(stats.TotalFail, old.TotalFail),
 			},
 		}
 	}
