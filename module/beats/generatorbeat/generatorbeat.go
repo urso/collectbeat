@@ -53,9 +53,14 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 	}, nil
 }
 
+func (m *metricSet) reset() {
+	m.statsLast = time.Time{}
+}
+
 func (m *metricSet) Fetch() (common.MapStr, error) {
 	resp, err := m.client.Get(m.url)
 	if err != nil {
+		m.reset()
 		return nil, err
 	}
 	now := time.Now()
@@ -64,6 +69,7 @@ func (m *metricSet) Fetch() (common.MapStr, error) {
 	stats := beatStats{}
 	err = json.NewDecoder(resp.Body).Decode(&stats)
 	if err != nil {
+		m.reset()
 		return nil, err
 	}
 
