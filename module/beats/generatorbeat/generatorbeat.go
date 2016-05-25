@@ -91,23 +91,6 @@ func (m *metricSet) Fetch() (common.MapStr, error) {
 				"fail":    delta(stats.ESFail, stats.ESFail),
 			},
 		}
-	} else {
-		event = common.MapStr{
-			"hostname":   m.Host(),
-			"@timestamp": common.Time(now),
-			"logstash": common.MapStr{
-				"success": 0.0,
-				"fail":    0.0,
-			},
-			"kafka": common.MapStr{
-				"success": 0.0,
-				"fail":    0.0,
-			},
-			"es": common.MapStr{
-				"success": 0.0,
-				"fail":    0.0,
-			},
-		}
 	}
 
 	m.statsLast = now
