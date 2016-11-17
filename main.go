@@ -6,25 +6,16 @@ import (
 	"github.com/elastic/beats/libbeat/beat"
 	"github.com/elastic/beats/metricbeat/beater"
 
-	// get system stats modules from metricbeat
-	_ "github.com/elastic/beats/metricbeat/module/system"
-	_ "github.com/elastic/beats/metricbeat/module/system/core"
-	_ "github.com/elastic/beats/metricbeat/module/system/cpu"
-	_ "github.com/elastic/beats/metricbeat/module/system/disk"
-	_ "github.com/elastic/beats/metricbeat/module/system/filesystem"
-	_ "github.com/elastic/beats/metricbeat/module/system/fsstat"
-	_ "github.com/elastic/beats/metricbeat/module/system/memory"
-	_ "github.com/elastic/beats/metricbeat/module/system/process"
-
-	// get beats modules
-	_ "github.com/urso/collectbeat/module/beats/generatorbeat"
+	// Make sure all your modules and metricsets are linked in this file
+	_ "github.com/urso/collectbeat/include"
+	// Uncomment the following line to include all official metricbeat module and metricsets
+	//_ "github.com/elastic/beats/metricbeat/include"
 )
 
-// Name of this Beat.
 var Name = "collectbeat"
 
 func main() {
-	if err := beat.Run(Name, "", beater.New()); err != nil {
+	if err := beat.Run(Name, "", beater.New); err != nil {
 		os.Exit(1)
 	}
 }

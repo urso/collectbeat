@@ -1,0 +1,28 @@
+version: '2'
+services:
+  beat:
+    build: ${PWD}/.
+    links:
+      - filebeat
+    environment:
+      - FILEBEAT_HOST=filebeat
+      - FILEBEAT_PORT=6060
+      - TEST_ENVIRONMENT=false
+    working_dir: /go/src/github.com/elastic/beats/metricbeat
+    volumes:
+      - ${PWD}/..:/go/src/github.com/elastic/beats/
+    command: make
+    entrypoint: /go/src/github.com/elastic/beats/metricbeat/docker-entrypoint.sh
+
+  # Overloading kibana with a simple image as it is not needed here
+  kibana:
+    build:
+      context: ${PWD}/../testing/environments/
+      dockerfile: Dockerfile
+
+  # Modules
+  filebeat:
+    build: ${PWD}/module/beats/filebeat/_meta
+
+
+

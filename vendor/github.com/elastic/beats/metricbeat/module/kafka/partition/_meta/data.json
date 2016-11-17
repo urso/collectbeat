@@ -1,0 +1,38 @@
+{
+    "@timestamp": "2016-05-23T08:05:34.853Z",
+    "kafka": {
+        "partition": {
+            "broker": {
+                "address": "kafka:9092",
+                "id": -1
+            },
+            "offset": {
+                "error": 0,
+                "newest": 768,
+                "oldest": 0
+            },
+            "partition": {
+                "error": 0,
+                "id": 0,
+                "isr": [
+                    0
+                ],
+                "leader": 0,
+                "replicas": [
+                    0
+                ]
+            },
+            "topic": {
+                "error": 0,
+                "name": "testtopic"
+            }
+        }
+    },
+    "metricset": {
+        "host": "localhost",
+        "module": "kafka",
+        "name": "partition",
+        "rtt": 115
+    },
+    "type": "metricsets"
+}

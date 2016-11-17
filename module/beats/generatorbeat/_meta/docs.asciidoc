@@ -1,0 +1,3 @@
+=== beats generatorbeat MetricSet
+
+This is the generatorbeat metricset of the module beats.

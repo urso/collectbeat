@@ -1,0 +1,9 @@
+- name: generatorbeat
+  type: group
+  description: >
+    generatorbeat
+  fields:
+    - name: example
+      type: keyword
+      description: >
+        Example field
